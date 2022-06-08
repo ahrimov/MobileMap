@@ -1,52 +1,57 @@
-//import { copyDatabaseFile } from "./openDB.js"
-
 document.addEventListener('deviceready', onDeviceReady, false);
+var vectorSource = new ol.source.Vector()
 
 var all_features = []
+
+
+var map;
 
 function onDeviceReady() {
   console.log('ready')
 
-  copyDatabaseFile("sample.db").then(function () {
-    var db = sqlitePlugin.openDatabase("sample.db");
-    db.readTransaction(function (txn){
-      txn.executeSql('SELECT data FROM idx_свеча_GEOMETRY_node', [], function(tx, res){
-        console.log('Successfully read from pre-populated DB:')
-        console.log(JSON.stringify(res.rows.item(1)))
-        //var data = res.rows.item(1).data
-        /*var data = new Uint8Array([
-          137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,8,0,0,
-          0,8,8,2,0,0,0,75,109,41,220,0,0,0,34,73,68,65,84,8,215,99,120,
-          173,168,135,21,49,0,241,255,15,90,104,8,33,129,83,7,97,163,136,
-          214,129,93,2,43,2,0,181,31,90,179,225,252,176,37,0,0,0,0,73,69,
-          78,68,174,66,96,130]);*/
-        let blob = new Blob([data], {type: 'image/png'})
-        var url = URL.createObjectURL(blob)
-        var img = new Image()
-        img.src = url
-        console.log("data length: " + data.length);
-        console.log("url: " + url);
-        document.body.appendChild(img);
-        //console.log(JSON.stringify(res.rows.item(0)))
-      })
+  
+  //copyDatabaseFile("sample.db").then(function () {
+    var db = window.sqlitePlugin.openDatabase({path:cordova.file.applicationStorageDirectory + "app_database/sample.db", name:"sample"})
+    var query = "SELECT id, pipe as name" + //
+    " , AsText(Geometry)" + //
+    " as geom from кран";
+    var querySuccess = function(tx, res){
+      const format = new ol.format.WKT();
+      for(let i = 0; i < res.rows.length; i++){
+        var wkt = res.rows.item(i).geom
+        feature = format.readFeature(wkt)
+        feature.id = res.rows.item(i).id
+        feature.name = res.rows.item(i).name
+          
+        vectorSource.addFeature(feature)
+        all_features.push(feature)
+
+        
+      }
+    }
+    var queryError = function(){console.log("error")}
+    db.transaction(function(tx) {
+        tx.executeSql(query, [], querySuccess, queryError);
     })
-  })
+
+
+//})
 
 
 
-  window.resolveLocalFileSystemURL(cordova.file.externalDataDirectory + "json.json", gotFile, fail);
+  //window.resolveLocalFileSystemURL(cordova.file.externalDataDirectory + "json.json", gotFile, fail);
   var raster = new ol.layer.Tile({
     source: new ol.source.OSM({
-            url: cordova.file.externalDataDirectory + 'Tiles/{z}/{x}/{y}.png',
+           /* url: cordova.file.externalDataDirectory + 'Tiles/{z}/{x}/{y}.png',
             tileLoadFunction: function(imageTile, src){
               window.resolveLocalFileSystemURL(src, function success(fileEntry){
                 imageTile.getImage().src = fileEntry.toInternalURL();
               })
-            }
+            }*/
     })
   });
 
-var vectorSource = new ol.source.Vector()
+
 
 const vector = new ol.layer.Vector({
   source: vectorSource,
@@ -64,17 +69,17 @@ const vector = new ol.layer.Vector({
   }),
   });
 
-  var map = new ol.Map({
+  map = new ol.Map({
     target: 'map-container',
     layers: [raster, vector],
     view: new ol.View({
       center: ol.proj.fromLonLat([55.4362, 58.7667]),
       zoom: 5,
-      minZoom: 5,
+      minZoom: 1,
       maxZoom: 9
     }),
   }); 
-
+/*
   function createVectorSourceFromJson(filename){
     const json = JSON.parse(filename) 
     for (let line of json){
@@ -93,7 +98,7 @@ const vector = new ol.layer.Vector({
   }
   
   
-  function gotFile(file) {     
+  function gotFile(file) {    
     file.file(function (file) {                
         var reader = new FileReader();
         reader.onloadend = function (evt) {          
@@ -109,12 +114,30 @@ const vector = new ol.layer.Vector({
     console.info("FileSystem Error : " + e);
   }
 
-
+*/
   document.getElementById("layers").addEventListener("click", changeLayers, false);
   var showLayer = true;
   function changeLayers(){
     showLayer = !showLayer;
     vector.setVisible(showLayer);
+  }
+
+  document.getElementById("list-button").addEventListener("click", showList, false);
+  function showList(){
+    $('#home').css({'display': 'none'})
+    $('#list').css({'display': 'block'})
+    line = ""
+    for(let feature of all_features){
+      line += `<tr onclick="listFeatureClick(`+ feature.id +`)"><td>` + feature.name + `</td></tr>`
+    }
+    $('#list .table').html(line)
+  }
+
+
+  document.getElementById("backHome").addEventListener("click", backHome, false);
+  function backHome(){
+    $('#list').css({'display': 'none'})
+    $('#home').css({'display': 'block'})
   }
 
   const displayModuleFeature = function (pixel) {
@@ -125,7 +148,7 @@ const vector = new ol.layer.Vector({
     else if(features.length > 0 ){
       var line = ''
       for (let feature of features){
-        line += `<tr onclick="moduleFeatureClick(`+ feature.get('id') +`)"><td>` + feature.get('name') + `</td></tr>`
+        line += `<tr onclick="moduleFeatureClick(`+ feature.id +`)"><td>` + feature.name + `</td></tr>`
         $('#manyFeature .table').html(line)
       }
       $('#manyFeature').modal('show');
@@ -146,12 +169,34 @@ function moduleFeatureClick(feature_id){
   $('#manyFeature').modal('hide');
 }
 
+function listFeatureClick(feature_id){
+  $('#list').css({'display': 'none'})
+  $('#home').css({'display': 'block'})
+  const feature = findFeatureByID(all_features, feature_id)
+  displayFeatureInfo(feature)
+}
+
 function displayFeatureInfo(feature){
   if(feature != null){
     $('#infoFeature').css({'visibility': 'visible'})
-    $('#infoFeature .point_id td').text(feature.get('id'))
-    $('#infoFeature .name td').text(feature.get('name'))
+    $('#infoFeature .point_id td').text(feature.id)
+    $('#infoFeature .name td').text(feature.name)
     $('#infoFeature .desc td').text(feature.get('desc'))
+    let featureCoords = feature.getGeometry().getCoordinates();
+    let coord = []
+    coord.push(featureCoords[0])
+    //const projWidth = ol.extent.getWidth(map.getView().getProjection().getExtent());  
+    //const worldsAway = Math.round(e.coordinate[0] / projWidth);  
+    //featureCoords[0] = featureCoords[0] + worldsAway * projWidth;  
+    //popup.setPosition(featureCoords);   
+    console.log(map.getView().getCenter())
+    console.log(coord)
+    map.setView(new ol.View({
+      center: featureCoords,
+      zoom: 8,
+      maxZoom: 9,
+      minZoom: 5
+  }));
   }
   else{
     $('#infoFeature').css('display: none;')
@@ -160,7 +205,7 @@ function displayFeatureInfo(feature){
  
 function findFeatureByID(features, id){
   for(feature of features){
-    if(feature.get('id') == id){
+    if(feature.id == id){
       return feature
     }
   }
