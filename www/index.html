@@ -18,13 +18,23 @@
     </style>
   </head>
   <body>
-    <div id="map-container"></div>
-    <button id="layers">Hide Layer</button>
-    <div id="infoFeature" style="visibility: hidden">
+    <div id="home">
+      <div id="map-container"></div>
+      <button id="layers">Hide Layer</button>
+      <button id="list-button">Show List</button>
+      <div id="infoFeature" style="visibility: hidden">
+        <table class="table table-bordered">
+          <tr class="point_id"><th>Point_id</th><td></td></tr>
+          <tr class="name"><th>Имя</th><td></td></tr>
+          <tr class="desc"><th>Описание</th><td></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div id="list">
+      <button id="backHome">BackHome</button>
       <table class="table table-bordered">
-        <tr class="point_id"><th>Point_id</th><td></td></tr>
-        <tr class="name"><th>Имя</th><td></td></tr>
-        <tr class="desc"><th>Описание</th><td></td></tr>
+        <tbody></tbody>
       </table>
     </div>
 
@@ -44,6 +54,9 @@
         </div>
       </div>
     </div>
+
+    <!--list-->
+    
 
     <script src="./libs/v6.14.1-dist/ol.js"></script>
     <script src="./libs/jquery-3.6.0.min.js"></script>
