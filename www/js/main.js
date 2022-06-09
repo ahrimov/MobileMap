@@ -9,33 +9,31 @@ var map;
 function onDeviceReady() {
   console.log('ready')
 
-  
-  //copyDatabaseFile("sample.db").then(function () {
-    var db = window.sqlitePlugin.openDatabase({path:cordova.file.applicationStorageDirectory + "app_database/sample.db", name:"sample"})
-    var query = "SELECT id, pipe as name" + //
-    " , AsText(Geometry)" + //
-    " as geom from кран";
-    var querySuccess = function(tx, res){
-      const format = new ol.format.WKT();
-      for(let i = 0; i < res.rows.length; i++){
-        var wkt = res.rows.item(i).geom
-        feature = format.readFeature(wkt)
-        feature.id = res.rows.item(i).id
-        feature.name = res.rows.item(i).name
-          
-        vectorSource.addFeature(feature)
-        all_features.push(feature)
-
-        
+  var db = window.sqlitePlugin.openDatabase({path:cordova.file.applicationStorageDirectory + "app_database/full_sample.db", name:"sample"})
+  var query = "SELECT id, pipe as name, AsText(Geometry) as geom, station,  date_insp as date from свеча";
+  var querySuccess = function(tx, res){
+    const format = new ol.format.WKT();
+    for(let i = 0; i < res.rows.length; i++){
+      var wkt = res.rows.item(i).geom
+      feature = format.readFeature(wkt)
+      feature.id = res.rows.item(i).id
+      feature.name = res.rows.item(i).name
+      feature.station = res.rows.item(i).station
+      if (typeof res.rows.item(i).date === 'undefined'){
+        feature.date_insp = "None"
       }
+      else{
+        feature.date_insp = new Date(res.rows.item(i).date)
+      }
+      vectorSource.addFeature(feature)
+      all_features.push(feature)
     }
-    var queryError = function(){console.log("error")}
-    db.transaction(function(tx) {
-        tx.executeSql(query, [], querySuccess, queryError);
-    })
+  }
+  var queryError = function(){console.log("error")}
+  db.transaction(function(tx) {
+      tx.executeSql(query, [], querySuccess, queryError);
+  })
 
-
-//})
 
 
 
@@ -140,6 +138,21 @@ const vector = new ol.layer.Vector({
     $('#home').css({'display': 'block'})
   }
 
+
+  document.getElementById("add-test-line").addEventListener("click", addTestLine, false);
+  function addTestLine(){
+    var query = "INSERT INTO свеча (id, lpu, station, date_insp) VALUES(200, 'Тестовые данные', 23222.1123, " + Date.now() + ")"
+    var querySuccess = function(tx, res){
+      console.log("Success add test line")
+    }
+    var queryError = function(){console.log("error")}
+    db.transaction(function(tx) {
+        tx.executeSql(query, [], querySuccess, queryError);
+    })
+  }
+
+
+
   const displayModuleFeature = function (pixel) {
     const features = map.getFeaturesAtPixel(pixel)
     if(features.length == 1){
@@ -181,19 +194,14 @@ function displayFeatureInfo(feature){
     $('#infoFeature').css({'visibility': 'visible'})
     $('#infoFeature .point_id td').text(feature.id)
     $('#infoFeature .name td').text(feature.name)
-    $('#infoFeature .desc td').text(feature.get('desc'))
+    $('#infoFeature .station td').text(feature.station)
+    $('#infoFeature .date_insp td').text(feature.date_insp)
     let featureCoords = feature.getGeometry().getCoordinates();
-    let coord = []
-    coord.push(featureCoords[0])
-    //const projWidth = ol.extent.getWidth(map.getView().getProjection().getExtent());  
-    //const worldsAway = Math.round(e.coordinate[0] / projWidth);  
-    //featureCoords[0] = featureCoords[0] + worldsAway * projWidth;  
-    //popup.setPosition(featureCoords);   
-    console.log(map.getView().getCenter())
-    console.log(coord)
+    var str = featureCoords.toString()
+    var arr = str.split(',')
     map.setView(new ol.View({
-      center: featureCoords,
-      zoom: 8,
+      center: [parseInt(arr[0]),parseInt(arr[1])],
+      zoom: 9,
       maxZoom: 9,
       minZoom: 5
   }));
