@@ -9,30 +9,12 @@ var map;
 function onDeviceReady() {
   console.log('ready')
 
-  var db = window.sqlitePlugin.openDatabase({path:cordova.file.applicationStorageDirectory + "app_database/full_sample.db", name:"sample"})
-  var query = "SELECT id, pipe as name, AsText(Geometry) as geom, station,  date_insp as date from свеча";
-  var querySuccess = function(tx, res){
-    const format = new ol.format.WKT();
-    for(let i = 0; i < res.rows.length; i++){
-      var wkt = res.rows.item(i).geom
-      feature = format.readFeature(wkt)
-      feature.id = res.rows.item(i).id
-      feature.name = res.rows.item(i).name
-      feature.station = res.rows.item(i).station
-      if (typeof res.rows.item(i).date === 'undefined'){
-        feature.date_insp = "None"
-      }
-      else{
-        feature.date_insp = new Date(res.rows.item(i).date)
-      }
-      vectorSource.addFeature(feature)
-      all_features.push(feature)
-    }
-  }
-  var queryError = function(){console.log("error")}
-  db.transaction(function(tx) {
-      tx.executeSql(query, [], querySuccess, queryError);
-  })
+  drawCurrentPosition()
+
+  parseDataFromDB()
+
+
+
 
 
 
@@ -113,6 +95,39 @@ const vector = new ol.layer.Vector({
   }
 
 */
+
+  function parseDataFromDB() {
+
+    var db = window.sqlitePlugin.openDatabase({
+      path: cordova.file.applicationStorageDirectory + "app_database/full_sample.db",
+      name: "sample"
+    })
+    var query = "SELECT id, pipe as name, AsText(Geometry) as geom, station,  date_insp as date from свеча";
+    var querySuccess = function (tx, res) {
+      const format = new ol.format.WKT();
+      for (let i = 0; i < res.rows.length; i++) {
+        var wkt = res.rows.item(i).geom
+        feature = format.readFeature(wkt)
+        feature.id = res.rows.item(i).id
+        feature.name = res.rows.item(i).name
+        feature.station = res.rows.item(i).station
+        if (typeof res.rows.item(i).date === 'undefined') {
+          feature.date_insp = "None"
+        } else {
+          feature.date_insp = new Date(res.rows.item(i).date)
+        }
+        vectorSource.addFeature(feature)
+        all_features.push(feature)
+      }
+    }
+    var queryError = function () {
+      console.log("error")
+    }
+    db.transaction(function (tx) {
+      tx.executeSql(query, [], querySuccess, queryError);
+    })
+  }
+
   document.getElementById("layers").addEventListener("click", changeLayers, false);
   var showLayer = true;
   function changeLayers(){
@@ -151,6 +166,7 @@ const vector = new ol.layer.Vector({
     })
   }
 
+  document.getElementById("camera").addEventListener("click", openCamera, false);
 
 
   const displayModuleFeature = function (pixel) {
@@ -191,7 +207,7 @@ function listFeatureClick(feature_id){
 
 function displayFeatureInfo(feature){
   if(feature != null){
-    $('#infoFeature').css({'visibility': 'visible'})
+    $('#infoFeature').css({'display': 'block'})
     $('#infoFeature .point_id td').text(feature.id)
     $('#infoFeature .name td').text(feature.name)
     $('#infoFeature .station td').text(feature.station)

@@ -23,7 +23,10 @@
       <button id="layers">Hide Layer</button>
       <button id="list-button">Show List</button>
       <button id="add-test-line">Add test line</button>
-      <div id="infoFeature" style="visibility: hidden">
+      <br>
+      <button id="camera">Open Camera</button>
+      <img id="imageFile">
+      <div id="infoFeature" style="display: none">
         <table class="table table-bordered">
           <tr class="point_id"><th>Point_id</th><td></td></tr>
           <tr class="name"><th>Имя</th><td></td></tr>
@@ -33,7 +36,7 @@
       </div>
     </div>
 
-    <div id="list">
+    <div id="list" style="display: none">
       <button id="backHome">BackHome</button>
       <table class="table table-bordered">
         <tbody></tbody>
@@ -66,6 +69,8 @@
     <script src="cordova.js"></script>
     <script src="./js/main.js"></script>
     <script src="./js/openDB.js"></script>
+    <script src="./js/camera.js"></script>
+    <script src="./js/gps.js"></script>
   </body>
 </html>
 
