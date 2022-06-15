@@ -3,17 +3,25 @@ var vectorSource = new ol.source.Vector()
 
 var all_features = []
 
+var map, db;
 
-var map;
+var layers = {}
+
+
 
 function onDeviceReady() {
   console.log('ready')
+
+  db = window.sqlitePlugin.openDatabase({
+    path: cordova.file.applicationStorageDirectory + "app_database/full_sample.db",
+    name: "sample"
+  })
 
   drawCurrentPosition()
 
   parseDataFromDB()
 
-
+  searchXML()
 
 
 
@@ -97,11 +105,6 @@ const vector = new ol.layer.Vector({
 */
 
   function parseDataFromDB() {
-
-    var db = window.sqlitePlugin.openDatabase({
-      path: cordova.file.applicationStorageDirectory + "app_database/full_sample.db",
-      name: "sample"
-    })
     var query = "SELECT id, pipe as name, AsText(Geometry) as geom, station,  date_insp as date from свеча";
     var querySuccess = function (tx, res) {
       const format = new ol.format.WKT();
