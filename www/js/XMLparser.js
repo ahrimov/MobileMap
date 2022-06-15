@@ -39,18 +39,30 @@ function openFile(path, post_processing){
 }
 
 function XMLparser(xml){
-    var doc = $.parseXML(xml)
-    //var parser = new DOMParser()
-    //var dom = parser.parseFromString(xml, "application/xml")
-    //var name = dom.getElementsByTagName("id").item(0).textContent
-    doc = $( doc )
-    var name = doc.first("layerDb id").text()
+        var doc = $.parseXML(xml)
+    var parser = new DOMParser()
+    var dom = parser.parseFromString(xml, "application/xml")
+    var name = dom.getElementsByTagName("id").item(0).textContent
+    //doc = $( doc )
+    //var name = doc.first("layerDb id").justtext()
     var source = new ol.source.Vector()
     getDataFromBD(name)
 
     let color_stroke = $(doc).find("Stroke CssParametr[name='stroke']").text()
     let width_stroke = $(doc).find("Stroke CssParametr[name='stroke-width']").text()
     let fill = new ol.style.Fill({color: $(doc).find("colorFill").text() })
+    let fig = $(doc).find("WellKnownName").text()
+    console.log(fig)
+    var image;
+    switch(fig){
+        case "square":
+            image = new ol.geom.Polygon({
+                fill: new  ol.style.Fill({
+                    color: $(doc).find("Fill CssParametr[name='fill']").text(),
+                  }),
+            })
+        case "":
+    }
 
     var layer = new ol.layer.Vector({
         source: source,
@@ -59,7 +71,7 @@ function XMLparser(xml){
                 color: color_stroke,
                 width: width_stroke
             }),
-            fill: fill
+            image: image
         })
     })
     layers[name] = layer
